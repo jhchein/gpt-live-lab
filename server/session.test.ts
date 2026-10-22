@@ -160,50 +160,6 @@ test("clock is provided to GPT-Live and refreshed for every reasoning tool conti
     },
   });
 
-  test("503 retry attempts are individually traced and priced without phantom pending charges", async (t) => {
-    let requests = 0;
-    const webSearch = createWebSearch("fixture-key", async () => ++requests === 1
-      ? new Response(null, { status: 503, headers: { "Retry-After": "0" } })
-      : Response.json({ webResults: [] }));
-    const f = await fixture(t, {
-      steps: [toolResponse("retry-search"), answerResponse], webSearch, pricing: readPricing({}),
-    });
-    await f.session.start("v=0\r\noffer"); f.send(input); f.send(delegation());
-    await until(() => hasTrace(f.messages, "luna.response"));
-    const metrics = lastMetrics(f.messages);
-    assert.equal(requests, 2);
-    assert.equal(metrics.searchRequests, 2);
-    assert.equal(metrics.searchFailed, 1);
-    assert.equal(metrics.searchSucceeded, 1);
-    assert.equal(metrics.searchUncertain, 1);
-    assert.equal(metrics.cost?.search.knownUsd, 0.014);
-    assert.ok(!metrics.cost?.reasons.some((reason) => /Search requests are pending|counts are incomplete/.test(reason)));
-    assert.equal(f.messages.filter((message) => message.type === "trace" && message.event.type === "search.attempt").length, 2);
-    assert.ok(hasTrace(f.messages, "search.retry"));
-    const response = f.messages.find((message) => message.type === "trace" && message.event.type === "search.response");
-    assert.ok(response?.type === "trace" && isObject(response.event.payload));
-    assert.equal(response.event.payload.attempt, 2);
-  });
-
-  test("Stop during Retry-After waiting counts only the request already sent", async (t) => {
-    let requests = 0;
-    const webSearch = createWebSearch("fixture-key", async () => {
-      requests++;
-      return new Response(null, { status: 503, headers: { "Retry-After": "10" } });
-    });
-    const f = await fixture(t, { steps: [toolResponse("retry-stop")], webSearch, pricing: readPricing({}) });
-    await f.session.start("v=0\r\noffer"); f.send(input); f.send(delegation());
-    await until(() => hasTrace(f.messages, "search.retry"));
-    await f.session.stop();
-    await until(() => hasTrace(f.messages, "luna.cancelled"));
-    const metrics = lastMetrics(f.messages);
-    assert.equal(requests, 1);
-    assert.equal(metrics.searchRequests, 1);
-    assert.equal(metrics.searchFailed, 1);
-    assert.equal(metrics.searchUncertain, 1);
-    assert.equal(metrics.cost?.search.knownUsd, 0.007);
-    assert.ok(!metrics.cost?.reasons.some((reason) => /Search requests are pending|counts are incomplete/.test(reason)));
-  });
   await f.session.start("v=0\r\noffer");
   const live = f.requests[0].body.session;
   assert.ok(isObject(live));
@@ -213,6 +169,51 @@ test("clock is provided to GPT-Live and refreshed for every reasoning tool conti
   const requests = f.requests.filter((request) => request.path.endsWith("/responses"));
   assert.match(String(requests[0].body.instructions), /2026-10-22T18:00:00\.000Z/);
   assert.match(String(requests[1].body.instructions), /2026-10-22T18:01:00\.000Z/);
+});
+
+test("503 retry attempts are individually traced and priced without phantom pending charges", async (t) => {
+  let requests = 0;
+  const webSearch = createWebSearch("fixture-key", async () => ++requests === 1
+    ? new Response(null, { status: 503, headers: { "Retry-After": "0" } })
+    : Response.json({ webResults: [] }));
+  const f = await fixture(t, {
+    steps: [toolResponse("retry-search"), answerResponse], webSearch, pricing: readPricing({}),
+  });
+  await f.session.start("v=0\r\noffer"); f.send(input); f.send(delegation());
+  await until(() => hasTrace(f.messages, "luna.response"));
+  const metrics = lastMetrics(f.messages);
+  assert.equal(requests, 2);
+  assert.equal(metrics.searchRequests, 2);
+  assert.equal(metrics.searchFailed, 1);
+  assert.equal(metrics.searchSucceeded, 1);
+  assert.equal(metrics.searchUncertain, 1);
+  assert.equal(metrics.cost?.search.knownUsd, 0.014);
+  assert.ok(!metrics.cost?.reasons.some((reason) => /Search requests are pending|counts are incomplete/.test(reason)));
+  assert.equal(f.messages.filter((message) => message.type === "trace" && message.event.type === "search.attempt").length, 2);
+  assert.ok(hasTrace(f.messages, "search.retry"));
+  const response = f.messages.find((message) => message.type === "trace" && message.event.type === "search.response");
+  assert.ok(response?.type === "trace" && isObject(response.event.payload));
+  assert.equal(response.event.payload.attempt, 2);
+});
+
+test("Stop during Retry-After waiting counts only the request already sent", async (t) => {
+  let requests = 0;
+  const webSearch = createWebSearch("fixture-key", async () => {
+    requests++;
+    return new Response(null, { status: 503, headers: { "Retry-After": "10" } });
+  });
+  const f = await fixture(t, { steps: [toolResponse("retry-stop")], webSearch, pricing: readPricing({}) });
+  await f.session.start("v=0\r\noffer"); f.send(input); f.send(delegation());
+  await until(() => hasTrace(f.messages, "search.retry"));
+  await f.session.stop();
+  await until(() => hasTrace(f.messages, "luna.cancelled"));
+  const metrics = lastMetrics(f.messages);
+  assert.equal(requests, 1);
+  assert.equal(metrics.searchRequests, 1);
+  assert.equal(metrics.searchFailed, 1);
+  assert.equal(metrics.searchUncertain, 1);
+  assert.equal(metrics.cost?.search.knownUsd, 0.007);
+  assert.ok(!metrics.cost?.reasons.some((reason) => /Search requests are pending|counts are incomplete/.test(reason)));
 });
 
 const toolResponse = (callId: string): JsonObject => ({
@@ -459,6 +460,8 @@ test("Responses streaming sends a complete sentence before Luna finishes", async
     event.type === "session.commentary.append" && event.content === "The first sentence is here. "));
   assert.ok(!hasTrace(f.messages, "luna.response"), "The final response must still be pending after the first sentence is delivered.");
   await until(() => hasTrace(f.messages, "luna.response"));
+  await until(() => f.received.filter((event) => event.type === "session.commentary.append").length >= 2,
+    "Both streamed sentences must reach the sideband peer.");
   const appends = f.received.filter((event) => event.type === "session.commentary.append");
   assert.equal(appends.map((event) => event.content).join(""), text);
   assert.ok(hasTrace(f.messages, "luna.first_text"));

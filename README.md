@@ -1,5 +1,7 @@
 # GPT-Live Lab
 
+[![CI](https://github.com/jhchein/gpt-live-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/jhchein/gpt-live-lab/actions/workflows/ci.yml)
+
 A local voice demo for Azure GPT-Live client delegation. Talk to GPT-Live, watch a separate reasoning model work, and inspect streamed answers, optional web research and estimated session cost.
 
 The browser runs React and Vite. A small Node.js backend handles Azure CLI authentication and model calls. You bring your own Azure resource and deployments.
@@ -19,6 +21,8 @@ You need:
 - Edge or Chrome with microphone permission. Embedded editor browsers may not support it.
 
 ```powershell
+git clone https://github.com/jhchein/gpt-live-lab.git
+cd gpt-live-lab
 npm ci
 Copy-Item .env.example .env
 az login
@@ -146,6 +150,8 @@ npm run build
 ```
 
 Tests use local mocks and need no Azure credentials. The build runs TypeScript checks and produces the Vite frontend.
+
+GitHub Actions runs both commands on Node.js 22 and 24 for pull requests to `main` and pushes to `main`. CI needs no Azure credentials or Web IQ key and does not deploy the app.
 
 Where to change things:
 

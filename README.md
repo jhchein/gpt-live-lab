@@ -151,7 +151,7 @@ npm run build
 
 Tests use local mocks and need no Azure credentials. The build runs TypeScript checks and produces the Vite frontend.
 
-GitHub Actions runs both commands on Node.js 22 for pull requests to `main` and pushes to `main`. CI needs no Azure credentials or Web IQ key and does not deploy the app.
+GitHub Actions runs both commands on Node.js 22 and 24 for pull requests to `main` and pushes to `main`. CI needs no Azure credentials or Web IQ key and does not deploy the app.
 
 Where to change things:
 

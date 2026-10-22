@@ -460,6 +460,8 @@ test("Responses streaming sends a complete sentence before Luna finishes", async
     event.type === "session.commentary.append" && event.content === "The first sentence is here. "));
   assert.ok(!hasTrace(f.messages, "luna.response"), "The final response must still be pending after the first sentence is delivered.");
   await until(() => hasTrace(f.messages, "luna.response"));
+  await until(() => f.received.filter((event) => event.type === "session.commentary.append").length >= 2,
+    "Both streamed sentences must reach the sideband peer.");
   const appends = f.received.filter((event) => event.type === "session.commentary.append");
   assert.equal(appends.map((event) => event.content).join(""), text);
   assert.ok(hasTrace(f.messages, "luna.first_text"));

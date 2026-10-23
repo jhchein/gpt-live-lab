@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { NOT_REPORTED, byteLength, formatBytes, formatCount, formatDuration, formatOffset, formatTime, shortId } from "../../ui/format";
+import { NOT_REPORTED, byteLength, formatBytes, formatCount, formatDuration, formatOffset, shortId } from "../../ui/format";
 import { JsonView } from "../../ui/JsonView";
 import { buildWaterfall, describeStep, hasUsage, readLunaRequest, readLunaResponse, simpleEntries, type Chunk, type Delegation } from "./model";
 import { severityOf, timeOf } from "../events";

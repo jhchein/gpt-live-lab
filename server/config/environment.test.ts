@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readConfig } from "./config.ts";
+import { readConfig } from "./environment.ts";
 
 const configured = {
   AZURE_ENDPOINT: "https://example-resource.services.ai.azure.com",

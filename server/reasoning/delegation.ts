@@ -1,9 +1,9 @@
 import { setTimeout as delay } from "node:timers/promises";
-import { errorMessage, isObject, type Category, type JsonObject, type PublicConfig, type SessionMetrics, type Source, type TokenUsage, type TraceEvent, type TranscriptFragment } from "../shared/protocol.ts";
-import { citedSourceIds, type SearchSource } from "../shared/search.ts";
+import { errorMessage, isObject, type Category, type JsonObject, type PublicConfig, type SessionMetrics, type Source, type TokenUsage, type TraceEvent, type TranscriptFragment } from "../../shared/protocol.ts";
+import { citedSourceIds, type SearchSource } from "../../shared/search.ts";
 import { outputText, parseSseFrames, takeCompleteSentences } from "./protocol.ts";
-import { searchQuery, WEB_SEARCH_TOOL, WebSearchError, type WebSearch } from "./web-search.ts";
-import { timeContext } from "./time-context.ts";
+import { searchQuery, WEB_SEARCH_TOOL, WebSearchError, type WebSearch } from "../search/web-search.ts";
+import { timeContext } from "../time-context.ts";
 export type DelegationMetrics = Pick<SessionMetrics, "lunaRequests" | "lunaResponses" | "lunaFailures" | "lunaCancelled" | "lunaUsage" | "lunaUsageReports" | "lunaUsageIncomplete" | "lunaCachedUsageIncomplete" | "lunaPendingRequests" | "searchRequests" | "searchSucceeded" | "searchFailed" | "searchUncertain">;
 export interface DelegationDependencies {
   config: Pick<PublicConfig, "endpoint" | "reasoningDeployment">;

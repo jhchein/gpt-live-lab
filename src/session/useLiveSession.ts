@@ -1,78 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { emptySessionMetrics, errorMessage, isObject, type Category, type Phase, type PublicConfig, type ServerMessage, type SessionMetrics, type TraceEvent } from "../../shared/protocol";
+import { emptySessionMetrics, errorMessage, parsePublicConfig, parseServerMessage, type Category, type ClientCommand, type Phase, type PublicConfig, type ServerMessage, type SessionMetrics, type TraceEvent } from "../../shared/protocol";
 import { SessionObservation } from "../inspection/observation";
 import { BrowserAudio, type RtcState } from "./browser-audio";
-import type { CostEstimate } from "../../shared/pricing";
 export const SESSION_LIMIT_SECONDS = 600;
-const phases: readonly string[] = ["idle", "starting", "live", "stopping", "error"];
-const sources: readonly string[] = ["browser", "backend", "live", "luna", "web"];
-const categories: readonly string[] = ["session", "transcript", "delegation", "reasoning", "search", "error"];
-const severities: readonly string[] = ["info", "warning", "error"];
-const closeStatuses: readonly string[] = ["open", "requested", "confirmed", "unconfirmed"];
-const isCount = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
-const isOptionalCount = (value: unknown) => value === undefined || isCount(value);
-function isTokenUsage(value: unknown) {
-  return isObject(value) && isOptionalCount(value.inputTokens) && isOptionalCount(value.outputTokens) &&
-    isOptionalCount(value.totalTokens) && isOptionalCount(value.cachedInputTokens) &&
-    isOptionalCount(value.reasoningOutputTokens);
-}
-function isCostEstimate(value: unknown): value is CostEstimate {
-  if (!isObject(value) || value.currency !== "USD" || !isCount(value.totalKnownUsd) ||
-    typeof value.complete !== "boolean" || typeof value.provisional !== "boolean" ||
-    !Array.isArray(value.reasons) || !value.reasons.every((reason) => typeof reason === "string"))
-    return false;
-  for (const name of ["live", "reasoning", "search"]) {
-    const subtotal = value[name];
-    if (!isObject(subtotal) || !isCount(subtotal.knownUsd) || typeof subtotal.complete !== "boolean")
-      return false;
-  }
-  return isObject(value.live) && typeof value.live.provisional === "boolean" &&
-    isObject(value.reasoning) && typeof value.reasoning.inputIncludesCached === "boolean" &&
-    isObject(value.search) && isCount(value.search.requests) && isCount(value.search.succeeded) &&
-    isCount(value.search.failed) && isCount(value.search.uncertain);
-}
-function isSessionMetrics(value: unknown): value is SessionMetrics {
-  return isObject(value) &&
-    isCount(value.lunaRequests) && isCount(value.lunaResponses) && isCount(value.lunaFailures) &&
-    isCount(value.lunaCancelled) && isCount(value.lunaUsageReports) &&
-    isTokenUsage(value.lunaUsage) && typeof value.lunaUsageIncomplete === "boolean" &&
-    (value.lunaCachedUsageIncomplete === undefined || typeof value.lunaCachedUsageIncomplete === "boolean") &&
-    isOptionalCount(value.liveSeconds) && (value.liveUsage === undefined || isObject(value.liveUsage)) &&
-    isOptionalCount(value.liveStartedAt) && isOptionalCount(value.liveEndedAt) &&
-    isOptionalCount(value.lunaPendingRequests) && isOptionalCount(value.searchRequests) &&
-    isOptionalCount(value.searchSucceeded) && isOptionalCount(value.searchFailed) && isOptionalCount(value.searchUncertain) &&
-    (value.webSearchEnabled === undefined || typeof value.webSearchEnabled === "boolean") &&
-    (value.cost === undefined || isCostEstimate(value.cost)) &&
-    typeof value.liveUsageFinal === "boolean" &&
-    typeof value.closeStatus === "string" && closeStatuses.includes(value.closeStatus);
-}
-function isServerMessage(value: unknown): value is ServerMessage {
-  if (!isObject(value))
-    return false;
-  if (value.type === "state")
-    return typeof value.phase === "string" && phases.includes(value.phase) &&
-      (value.sessionId === undefined || typeof value.sessionId === "string");
-  if (value.type === "answer")
-    return typeof value.sdp === "string";
-  if (value.type === "metrics")
-    return isSessionMetrics(value.metrics);
-  if (value.type === "transcript") {
-    const fragment = value.fragment;
-    return isObject(fragment) && (fragment.speaker === "user" || fragment.speaker === "assistant") &&
-      typeof fragment.text === "string" && typeof fragment.startMs === "number" && typeof fragment.endMs === "number";
-  }
-  if (value.type === "trace") {
-    const event = value.event;
-    return isObject(event) && typeof event.id === "string" && typeof event.time === "string" &&
-      typeof event.source === "string" && sources.includes(event.source) &&
-      typeof event.category === "string" && categories.includes(event.category) &&
-      typeof event.type === "string" && typeof event.label === "string" &&
-      (event.durationMs === undefined || typeof event.durationMs === "number") &&
-      (event.delegationId === undefined || typeof event.delegationId === "string") &&
-      (event.severity === undefined || (typeof event.severity === "string" && severities.includes(event.severity)));
-  }
-  return false;
-}
 export function useLiveSession() {
   const [config, setConfig] = useState<PublicConfig>();
   const [configError, setConfigError] = useState("");
@@ -173,14 +103,7 @@ export function useLiveSession() {
         if (!response.ok)
           throw new Error(`Backend HTTP ${response.status}`);
         const value: unknown = await response.json();
-        if (!isObject(value) || typeof value.endpoint !== "string" ||
-          typeof value.liveDeployment !== "string" || typeof value.reasoningDeployment !== "string") {
-          throw new Error("Invalid backend configuration.");
-        }
-        setConfig({
-          endpoint: value.endpoint, liveDeployment: value.liveDeployment, reasoningDeployment: value.reasoningDeployment,
-          webSearchAvailable: value.webSearchAvailable === true,
-        });
+        setConfig(parsePublicConfig(value));
       })
       .catch((error: unknown) => {
         if (!signal?.aborted)
@@ -250,9 +173,9 @@ export function useLiveSession() {
             if (run === generation.current)
               fail("Audio was not ready within 45 seconds. Session ended locally.");
           }, 45000);
-          ws.send(JSON.stringify({ type: "prepare" }));
+          ws.send(JSON.stringify({ type: "prepare" } satisfies ClientCommand));
           if (config?.webSearchAvailable)
-            ws.send(JSON.stringify({ type: "search", enabled: webSearchEnabled }));
+            ws.send(JSON.stringify({ type: "search", enabled: webSearchEnabled } satisfies ClientCommand));
           settled = true;
           resolve();
         };
@@ -260,9 +183,7 @@ export function useLiveSession() {
           if (run !== generation.current)
             return;
           try {
-            const message: unknown = JSON.parse(String(data));
-            if (!isServerMessage(message))
-              throw new Error("Invalid message from backend.");
+            const message = parseServerMessage(String(data));
             void handleMessage(message, run).catch((error: unknown) => {
               if (run === generation.current)
                 fail(errorMessage(error));
@@ -292,7 +213,7 @@ export function useLiveSession() {
       browserTrace("browser.offer.ready", "WebRTC offer ready; authentication requested", {}, "session", undefined, Math.round(performance.now() - (startupAt.current ?? performance.now())));
       browserTrace("browser.azure.create.started", "Creating Azure Live session", {});
       startSent.current = true;
-      ws.send(JSON.stringify({ type: "start", sdp }));
+      ws.send(JSON.stringify({ type: "start", sdp } satisfies ClientCommand));
     }
     catch (error) {
       if (run === generation.current)
@@ -346,7 +267,7 @@ export function useLiveSession() {
       setStopRequestedAt(Date.now());
       browserTrace("browser.stop", "Microphone and playback stopped; waiting for backend close confirmation", {});
       stopTimer.current = setTimeout(() => fail("Backend did not confirm closure. Final Azure usage is unknown."), 7000);
-      socket.send(JSON.stringify({ type: "stop" }));
+      socket.send(JSON.stringify({ type: "stop" } satisfies ClientCommand));
     }
     else {
       browserTrace("browser.stop", "Microphone and playback stopped locally", {});
@@ -358,7 +279,7 @@ export function useLiveSession() {
     setWebSearchEnabled(enabled);
     const socket = wsRef.current;
     if (socket?.readyState === WebSocket.OPEN)
-      socket.send(JSON.stringify({ type: "search", enabled }));
+      socket.send(JSON.stringify({ type: "search", enabled } satisfies ClientCommand));
   }
   const audioProps = { ref: audioRef, ...audioController.playerEvents };
   return {

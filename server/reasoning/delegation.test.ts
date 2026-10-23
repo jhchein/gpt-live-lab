@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DelegationExecutor, type DelegationDependencies, type DelegationMetrics } from "./delegation.ts";
-import { isObject, type JsonObject, type TranscriptFragment } from "../shared/protocol.ts";
+import { isObject, type JsonObject, type TranscriptFragment } from "../../shared/protocol.ts";
 
 const transcript: TranscriptFragment[] = [{ speaker: "user", text: "Find current facts.", startMs: 0, endMs: 100 }];
 function fixture(responses: JsonObject[], options: Partial<DelegationDependencies> = {}) {

@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { calculateCost, type PricingConfig } from "../shared/pricing.ts";
 import { emptySessionMetrics, type SessionMetrics } from "../shared/protocol.ts";
 import { CostBreakdown, CostTicker, formatCostUsd } from "../src/inspection/usage/CostTicker.tsx";
-import { PricingConfigError, readPricing } from "../server/pricing.ts";
+import { PricingConfigError, readPricing } from "../server/config/pricing.ts";
 
 const configured: PricingConfig = {
   liveUsdPerMinute: 60, liveMinimumSeconds: 15, liveRoundingSeconds: 1,

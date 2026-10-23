@@ -1,6 +1,6 @@
 import { setTimeout as delay } from "node:timers/promises";
-import { isObject } from "../shared/protocol.ts";
-import { sourceUrl, type SearchSource } from "../shared/search.ts";
+import { isObject } from "../../shared/protocol.ts";
+import { sourceUrl, type SearchSource } from "../../shared/search.ts";
 
 export interface SearchResult {
   sources: Omit<SearchSource, "id">[];

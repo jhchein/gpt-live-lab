@@ -12,7 +12,7 @@
     "dev:client": "vite",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
-    "test": "tsx --test \"server/*.test.ts\" \"src/**/*.test.ts\" \"tests/*.test.ts\""
+    "test": "tsx --test \"server/**/*.test.ts\" \"shared/**/*.test.ts\" \"src/**/*.test.ts\" \"tests/*.test.ts\""
   },
   "dependencies": {
     "@azure/identity": "^4.0.0",

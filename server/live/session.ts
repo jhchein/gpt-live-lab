@@ -1,17 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { setTimeout as delay } from "node:timers/promises";
 import WebSocket from "ws";
 import {
-  emptySessionMetrics, errorMessage, isObject,
+  emptySessionMetrics, errorMessage, isObject, parseObject,
   type Category, type JsonObject, type Phase, type PublicConfig,
   type ServerMessage, type Source, type TraceEvent, type TranscriptFragment,
-} from "../shared/protocol.ts";
-import { contextChunks, parseObject, readTranscript, scrub } from "./protocol.ts";
-import { calculateCost } from "../shared/pricing.ts";
-import { citedSourceIds, type SearchSource } from "../shared/search.ts";
-import type { WebSearch } from "./web-search.ts";
-import { DelegationExecutor } from "./delegation.ts";
-import { timeContext } from "./time-context.ts";
+} from "../../shared/protocol.ts";
+import { contextChunks, readTranscript } from "./protocol.ts";
+import { scrub } from "../diagnostics/redaction.ts";
+import { calculateCost } from "../../shared/pricing.ts";
+import type { WebSearch } from "../search/web-search.ts";
+import { DelegationExecutor } from "../reasoning/delegation.ts";
+import { timeContext } from "../time-context.ts";
 
 export interface SessionDependencies {
   config: PublicConfig;

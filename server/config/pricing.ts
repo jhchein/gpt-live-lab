@@ -1,4 +1,4 @@
-import type { PricingConfig } from "../shared/pricing.ts";
+import type { PricingConfig } from "../../shared/pricing.ts";
 
 export class PricingConfigError extends Error {
   constructor(public readonly variable: string, requirement: string) {

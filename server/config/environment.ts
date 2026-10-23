@@ -1,4 +1,4 @@
-import type { PublicConfig } from "../shared/protocol.ts";
+import type { PublicConfig } from "../../shared/protocol.ts";
 
 export function readConfig(env: NodeJS.ProcessEnv): PublicConfig {
   const required = (name: string) => {

@@ -1,9 +1,9 @@
 import { AzureCliCredential } from "@azure/identity";
 import { createApp } from "./app.ts";
-import { readConfig } from "./config.ts";
+import { readConfig } from "./config/environment.ts";
 import { createAccessTokenProvider } from "./token.ts";
-import { createWebSearch } from "./web-search.ts";
-import { readPricing } from "./pricing.ts";
+import { createWebSearch } from "./search/web-search.ts";
+import { readPricing } from "./config/pricing.ts";
 
 const config = readConfig(process.env);
 const webKey = process.env.WEB_IQ_API_KEY?.trim();

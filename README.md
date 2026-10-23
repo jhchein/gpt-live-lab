@@ -65,7 +65,7 @@ Limits and behavior:
 
 - Only Web Search is enabled. Each query requests up to five results with strict SafeSearch.
 - A delegation has a 120-second deadline across all model and search steps. The backend sends at most 100 searches per rolling minute, without counting other applications that share the key.
-- HTTP 503 gets one automatic retry. A valid `Retry-After` sets the wait, otherwise the backend waits 1 to 1.5 seconds. Both attempts count as billable. Other errors, including 401, 403 and 429, are not retried.
+- HTTP 503 gets one automatic retry. A valid `Retry-After` sets the wait, otherwise the backend waits 1 to 1.5 seconds. Each dispatched attempt enters the cost estimate; failed attempts may still be billable. Other errors, including 401, 403 and 429, are not retried.
 - Web IQ receives model-written queries, not the full transcript, but queries can still contain private details.
 - Sources are untrusted. A citation is marked only when the model uses a returned source ID, which verifies the reference and not the claim.
 - The demo does not send citation or click telemetry. If your Web IQ profile enables instrumentation, the demo shows a warning.
@@ -149,23 +149,11 @@ npm test
 npm run build
 ```
 
-Tests use local mocks and need no Azure credentials. The build runs TypeScript checks and produces the Vite frontend.
+Tests use local mocks and need no Azure credentials. The build runs strict TypeScript checks, rejects unused symbols and produces the Vite frontend.
 
-GitHub Actions runs both commands on Node.js 22 and 24 for pull requests to `main` and pushes to `main`. CI needs no Azure credentials or Web IQ key and does not deploy the app.
+GitHub Actions runs both commands on Node.js 22 and 24 for pull requests to `main` and pushes to `main`. Both CI jobs are required for merges to `main`, and the PR branch must be up to date. CI needs no Azure credentials or Web IQ key and does not deploy the app.
 
-Where to change things:
-
-| Area | Responsibility |
-| --- | --- |
-| [`src/App.tsx`](src/App.tsx) | Composes the page and connects its views. |
-| [`src/session/`](src/session/) | Voice-session controls, the control WebSocket, microphone, playback and WebRTC. |
-| [`src/inspection/`](src/inspection/) | Observation state and its conversation, delegation, connection, usage and diagnostic views. Each view's model lives alongside it. |
-| [`src/ui/`](src/ui/) | Shared indicators, formatting and JSON display. |
-| [`server/session.ts`](server/session.ts), [`server/delegation.ts`](server/delegation.ts) | The Azure voice session and queue, then each delegation's reasoning, tools and streaming. |
-| [`shared/`](shared/) | Browser/backend message contracts, pricing and source validation. |
-| [`tests/`](tests/) | Cross-module checks. Module-specific tests live next to their implementation. |
-
-[`CONTEXT.md`](CONTEXT.md) defines the project's terms.
+The [architecture guide](docs/architecture.md) maps responsibilities and explains startup, delegation, shutdown and error handling. Module-specific tests live next to their implementation; [`tests/`](tests/) holds cross-module checks. [`CONTEXT.md`](CONTEXT.md) defines the project's terms.
 
 ## References
 

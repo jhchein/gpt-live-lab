@@ -3,12 +3,11 @@ import { createServer } from "node:http";
 import { once } from "node:events";
 import { test, type TestContext } from "node:test";
 import WebSocket, { WebSocketServer } from "ws";
-import { LiveSession } from "./session.ts";
-import { createApp } from "./app.ts";
-import { parseObject } from "./protocol.ts";
-import { isObject, type JsonObject, type ServerMessage } from "../shared/protocol.ts";
-import { createWebSearch, WebSearchError, type WebSearch } from "./web-search.ts";
-import { readPricing } from "./pricing.ts";
+import { LiveSession } from "../server/live/session.ts";
+import { createApp } from "../server/app.ts";
+import { isObject, parseObject, type JsonObject, type ServerMessage } from "../shared/protocol.ts";
+import { createWebSearch, WebSearchError, type WebSearch } from "../server/search/web-search.ts";
+import { readPricing } from "../server/config/pricing.ts";
 import type { PricingConfig } from "../shared/pricing.ts";
 
 async function until(check: () => boolean, message = "Condition was not reached") {

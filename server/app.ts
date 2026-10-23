@@ -1,8 +1,7 @@
 import { createServer } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
-import { errorMessage, type PublicConfig } from "../shared/protocol.ts";
-import { parseObject } from "./protocol.ts";
-import { LiveSession, type SessionDependencies } from "./session.ts";
+import { errorMessage, parseClientCommand, type PublicConfig } from "../shared/protocol.ts";
+import { LiveSession, type SessionDependencies } from "./live/session.ts";
 
 const origins = new Set(["http://127.0.0.1:5173", "http://localhost:5173"]);
 
@@ -43,12 +42,9 @@ export function createApp(config: PublicConfig, dependencies: Omit<SessionDepend
     let used = false;
     client.on("message", (data) => {
       try {
-        const command = parseObject(data.toString());
+        const command = parseClientCommand(data.toString());
         if (command.type === "start") {
           if (used) throw new Error("Start a new browser connection for a new session.");
-          if (typeof command.sdp !== "string" || !command.sdp.startsWith("v=0") || command.sdp.length > 100_000) {
-            throw new Error("A valid WebRTC SDP offer is required.");
-          }
           used = true;
           void session.start(command.sdp);
         } else if (command.type === "prepare") {
@@ -57,10 +53,7 @@ export function createApp(config: PublicConfig, dependencies: Omit<SessionDepend
         } else if (command.type === "stop") {
           void session.stop();
         } else if (command.type === "search") {
-          if (typeof command.enabled !== "boolean") throw new Error("Web search enabled must be a boolean.");
           session.setWebSearch(command.enabled);
-        } else {
-          throw new Error(`Unknown browser command: ${String(command.type)}`);
         }
       } catch (error) {
         session.trace("backend", "error", "browser.command.error", "Browser command rejected", { message: errorMessage(error) });

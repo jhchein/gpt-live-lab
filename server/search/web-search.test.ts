@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createWebSearch, searchQuery, WebSearchError } from "./web-search.ts";
-import { citedSourceIds, sourceUrl } from "../shared/search.ts";
-import { scrub } from "./protocol.ts";
+import { citedSourceIds, sourceUrl } from "../../shared/search.ts";
+import { scrub } from "../diagnostics/redaction.ts";
 
 test("search arguments reject extra fields, empty text, and oversized queries", () => {
   assert.equal(searchQuery('{"query":" current news "}'), "current news");

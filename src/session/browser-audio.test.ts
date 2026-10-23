@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { BrowserAudio, type AudioPlatform, type AudioPeer } from "../src/browser-audio.ts";
+import { BrowserAudio, type AudioPlatform, type AudioPeer } from "./browser-audio.ts";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;

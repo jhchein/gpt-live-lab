@@ -5,9 +5,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { isObject, type TraceEvent } from "../shared/protocol.ts";
 import { App } from "../src/App.tsx";
-import { Delegations } from "../src/Delegations.tsx";
-import { formatCount, formatDuration, NOT_MEASURED, NOT_REPORTED, UNKNOWN } from "../src/format.ts";
-import { buildDelegations } from "../src/trace.ts";
+import { Delegations } from "../src/inspection/delegations/Delegations.tsx";
+import { formatCount, formatDuration, NOT_MEASURED, NOT_REPORTED, UNKNOWN } from "../src/ui/format.ts";
+import { buildDelegations } from "../src/inspection/delegations/model.ts";
+import { sanitizeForExport } from "../src/inspection/diagnostics/export.ts";
 
 test("default interface is English and keeps diagnostics out of the main view", () => {
   const html = renderToStaticMarkup(createElement(App));
@@ -64,4 +65,19 @@ test("publication templates contain no configured Azure values and use the publi
     resolved++;
   }
   assert.ok(resolved > 0);
+});
+
+test("source links use only safe tool-provided URLs and exports redact the Web IQ header", () => {
+  const base: TraceEvent = {
+    id: "search", time: "2026-01-01T00:00:00Z", source: "web", category: "search",
+    type: "search.response", label: "Sources", delegationId: "d", payload: { sources: [
+      { id: "S1", title: "Safe", url: "https://example.com", content: "evidence" },
+      { id: "S2", title: "Unsafe", url: "javascript:alert(1)", content: "bad" },
+      { id: "S3", title: "Credentials", url: "https://user:pass@example.com", content: "bad" },
+    ] },
+  };
+  const [delegation] = buildDelegations([base]);
+  assert.equal(delegation.sources.length, 1);
+  assert.equal(delegation.sources[0].id, "S1");
+  assert.ok(!JSON.stringify(sanitizeForExport({ "x-apikey": "fixture-web-key" })).includes("fixture-web-key"));
 });

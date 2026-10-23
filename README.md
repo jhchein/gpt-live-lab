@@ -1,6 +1,6 @@
 # GPT-Live Lab
 
-[![CI](https://github.com/jhchein/gpt-live-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/jhchein/gpt-live-lab/actions/workflows/ci.yml)
+[![CI](https://github.com/jhchein/gpt-live-lab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jhchein/gpt-live-lab/actions/workflows/ci.yml?query=branch%3Amain)
 
 A local voice demo for Azure GPT-Live client delegation. Talk to GPT-Live, watch a separate reasoning model work, and inspect streamed answers, optional web research and estimated session cost.
 
@@ -155,12 +155,17 @@ GitHub Actions runs both commands on Node.js 22 and 24 for pull requests to `mai
 
 Where to change things:
 
-- [`src/useLiveSession.ts`](src/useLiveSession.ts) wires the control WebSocket and React state.
-- [`src/browser-audio.ts`](src/browser-audio.ts) owns microphone, playback and WebRTC.
-- [`src/observation.ts`](src/observation.ts) owns the bounded history and the active, queued and search state.
-- [`server/session.ts`](server/session.ts) owns the Azure voice session and the work queue.
-- [`server/delegation.ts`](server/delegation.ts) runs one delegation, including reasoning, tools and streaming.
-- [`CONTEXT.md`](CONTEXT.md) defines the project's terms.
+| Area | Responsibility |
+| --- | --- |
+| [`src/App.tsx`](src/App.tsx) | Composes the page and connects its views. |
+| [`src/session/`](src/session/) | Voice-session controls, the control WebSocket, microphone, playback and WebRTC. |
+| [`src/inspection/`](src/inspection/) | Observation state and its conversation, delegation, connection, usage and diagnostic views. Each view's model lives alongside it. |
+| [`src/ui/`](src/ui/) | Shared indicators, formatting and JSON display. |
+| [`server/session.ts`](server/session.ts), [`server/delegation.ts`](server/delegation.ts) | The Azure voice session and queue, then each delegation's reasoning, tools and streaming. |
+| [`shared/`](shared/) | Browser/backend message contracts, pricing and source validation. |
+| [`tests/`](tests/) | Cross-module checks. Module-specific tests live next to their implementation. |
+
+[`CONTEXT.md`](CONTEXT.md) defines the project's terms.
 
 ## References
 

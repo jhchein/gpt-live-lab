@@ -1,10 +1,12 @@
 import { memo, useDeferredValue, useEffect, useMemo, useState } from "react";
-import type { Category, Source, TraceEvent } from "../shared/protocol";
-import { formatDuration, formatTime, shortId } from "./format";
-import { JsonView } from "./JsonView";
-import { matchesQuery, queryTerms, severityOf, timeOf } from "./trace";
-import { SeverityTag, SourceTag, severityTone, sourceLabels } from "./ui";
-import { MAX_EVENTS } from "./useLiveSession";
+import type { Category, Source, TraceEvent } from "../../../shared/protocol";
+import { formatDuration, formatTime, shortId } from "../../ui/format";
+import { JsonView } from "../../ui/JsonView";
+import { matchesQuery } from "./search";
+import { queryTerms } from "../../ui/json";
+import { severityOf, timeOf } from "../events";
+import { SeverityTag, SourceTag, severityTone, sourceLabels } from "../../ui/indicators";
+import { MAX_EVENTS } from "../observation";
 
 const categories: Category[] = ["session", "delegation", "reasoning", "search", "transcript", "error"];
 const categoryLabels: Record<Category, string> = {

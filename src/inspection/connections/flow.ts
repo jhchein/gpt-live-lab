@@ -1,8 +1,9 @@
-import type { Phase, TraceEvent } from "../shared/protocol";
-import { formatDuration } from "./format";
-import { timeOf, type Delegation } from "./trace";
-import type { RtcState } from "./useLiveSession";
-import type { Observation } from "./observation";
+import type { Phase, TraceEvent } from "../../../shared/protocol";
+import { formatDuration } from "../../ui/format";
+import { timeOf } from "../events";
+import { type Delegation } from "../delegations/model";
+import type { RtcState } from "../../session/browser-audio";
+import type { Observation } from "../observation";
 
 export type NodeId = "browser" | "backend" | "live" | "reasoning" | "web";
 export type LaneId = "mic" | "speech" | "command" | "update" | "append" | "sideband" | "request" | "stream" | "search" | "results";

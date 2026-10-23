@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isObject, type TraceEvent } from "../shared/protocol";
-import { AudioPanel } from "./AudioPanel";
-import { Conversation } from "./Conversation";
-import { Delegations } from "./Delegations";
-import { FlowMap } from "./FlowMap";
-import { formatTime } from "./format";
-import { RawEvents } from "./RawEvents";
-import { SessionBar } from "./SessionBar";
-import { buildConversation, collectIssues, severityOf, type Issue } from "./trace";
-import { SeverityTag, SourceTag, severityTone } from "./ui";
-import { Usage } from "./Usage";
-import { useLiveSession } from "./useLiveSession";
+import { AudioPanel } from "./session/AudioPanel";
+import { Conversation } from "./inspection/conversation/Conversation";
+import { Delegations } from "./inspection/delegations/Delegations";
+import { FlowMap } from "./inspection/connections/FlowMap";
+import { formatTime } from "./ui/format";
+import { RawEvents } from "./inspection/diagnostics/RawEvents";
+import { SessionBar } from "./session/SessionBar";
+import { buildConversation } from "./inspection/conversation/model";
+import { collectIssues, severityOf, type Issue } from "./inspection/events";
+import { SeverityTag, SourceTag, severityTone } from "./ui/indicators";
+import { Usage } from "./inspection/usage/Usage";
+import { useLiveSession } from "./session/useLiveSession";
 
 function issueHint(event: TraceEvent): string | undefined {
   const payload = isObject(event.payload) ? event.payload : {};

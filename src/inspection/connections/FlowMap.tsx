@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { LANES, deriveFlow, laneOf, reachesBrowser, type LaneId, type LaneState, type NodeId } from "./flow";
-import type { LiveSession } from "./useLiveSession";
+import type { LiveSession } from "../../session/useLiveSession";
 
 interface Point { x: number; y: number }
 interface Box { x: number; y: number; w: number; h: number }

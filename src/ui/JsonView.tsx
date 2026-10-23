@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { formatBytes, byteLength } from "./format";
-import { displayJson, highlightParts, queryTerms } from "./trace";
+import { displayJson, highlightParts, queryTerms } from "./json";
 
 // Pretty-printed payload with optional search highlighting and a copy button.
 export function JsonView({ payload, query = "", label = "JSON payload" }: { payload: unknown; query?: string; label?: string }) {

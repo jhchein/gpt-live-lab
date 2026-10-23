@@ -1,6 +1,6 @@
-import { NOT_MEASURED, formatBytes } from "./format";
+import { NOT_MEASURED, formatBytes } from "../ui/format";
 import type { LiveSession } from "./useLiveSession";
-import { Dot } from "./ui";
+import { Dot } from "../ui/indicators";
 
 const energy = (value: number | undefined) => (value === undefined ? NOT_MEASURED : value.toFixed(5));
 

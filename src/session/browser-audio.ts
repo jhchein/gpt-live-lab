@@ -1,4 +1,4 @@
-import { errorMessage, type Category, type TraceEvent } from "../shared/protocol";
+import { errorMessage, type Category, type TraceEvent } from "../../shared/protocol";
 
 export interface AudioInputDevice { deviceId: string; label: string }
 export interface AudioTransportStats {

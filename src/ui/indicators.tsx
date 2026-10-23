@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { Source } from "../shared/protocol";
-import type { Severity } from "./trace";
+import type { Source } from "../../shared/protocol";
+import type { Severity } from "../inspection/events";
 
 export type Tone = "idle" | "accent" | "info" | "ok" | "warn" | "bad";
 

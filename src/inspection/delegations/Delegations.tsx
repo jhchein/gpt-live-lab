@@ -1,13 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { NOT_REPORTED, byteLength, formatBytes, formatCount, formatDuration, formatOffset, formatTime, shortId } from "./format";
-import { JsonView } from "./JsonView";
-import {
-  buildWaterfall, describeStep, hasUsage, readLunaRequest, readLunaResponse, severityOf, simpleEntries, timeOf,
-  type Chunk, type Delegation,
-} from "./trace";
-import { MAX_EVENTS } from "./useLiveSession";
-import { Badge, SeverityTag, SourceTag, severityTone, type Tone } from "./ui";
-import type { TraceEvent } from "../shared/protocol";
+import { NOT_REPORTED, byteLength, formatBytes, formatCount, formatDuration, formatOffset, formatTime, shortId } from "../../ui/format";
+import { JsonView } from "../../ui/JsonView";
+import { buildWaterfall, describeStep, hasUsage, readLunaRequest, readLunaResponse, simpleEntries, type Chunk, type Delegation } from "./model";
+import { severityOf, timeOf } from "../events";
+import { MAX_EVENTS } from "../observation";
+import { Badge, SeverityTag, SourceTag, severityTone, type Tone } from "../../ui/indicators";
+import type { TraceEvent } from "../../../shared/protocol";
 
 const contextLabels: Record<string, string> = { fragments: "Fragments", snapshotBytes: "Snapshot size" };
 

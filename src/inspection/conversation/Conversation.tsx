@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { Phase } from "../shared/protocol";
-import { formatClock } from "./format";
-import { MAX_FRAGMENTS } from "./useLiveSession";
-import type { ConversationItem } from "./trace";
-import { Dot } from "./ui";
+import type { Phase } from "../../../shared/protocol";
+import { formatClock } from "../../ui/format";
+import { MAX_FRAGMENTS } from "../observation";
+import type { ConversationItem } from "./model";
+import { Dot } from "../../ui/indicators";
 
 interface Props {
   items: ConversationItem[];

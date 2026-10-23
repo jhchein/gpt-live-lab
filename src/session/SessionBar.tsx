@@ -1,8 +1,9 @@
-import type { Phase } from "../shared/protocol";
-import { CostTicker } from "./CostTicker";
-import { formatClock } from "./format";
-import { SESSION_LIMIT_SECONDS, type LiveSession, type RtcState } from "./useLiveSession";
-import { Dot, type Tone } from "./ui";
+import type { Phase } from "../../shared/protocol";
+import { CostTicker } from "../inspection/usage/CostTicker";
+import { formatClock } from "../ui/format";
+import { SESSION_LIMIT_SECONDS, type LiveSession } from "./useLiveSession";
+import { type RtcState } from "./browser-audio";
+import { Dot, type Tone } from "../ui/indicators";
 
 const STOP_WAIT_SECONDS = 7;
 

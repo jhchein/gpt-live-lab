@@ -2,10 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { TraceEvent } from "../shared/protocol.ts";
-import { deriveFlow, laneOf, reachesBrowser, type FlowInput } from "../src/flow.ts";
-import { reduceSearchFlow, SessionObservation, type SearchFlowState } from "../src/observation.ts";
-import { App } from "../src/App.tsx";
+import type { TraceEvent } from "../../../shared/protocol.ts";
+import { deriveFlow, laneOf, reachesBrowser, type FlowInput } from "./flow.ts";
+import { reduceSearchFlow, SessionObservation, type SearchFlowState } from "../observation.ts";
+import { App } from "../../App.tsx";
 
 const NOW = Date.parse("2026-01-01T00:00:10.000Z");
 let counter = 0;

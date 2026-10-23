@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { emptySessionMetrics, errorMessage, isObject, type Category, type Phase, type PublicConfig, type ServerMessage, type SessionMetrics, type TraceEvent, } from "../shared/protocol";
-import { SessionObservation } from "./observation";
+import { emptySessionMetrics, errorMessage, isObject, type Category, type Phase, type PublicConfig, type ServerMessage, type SessionMetrics, type TraceEvent } from "../../shared/protocol";
+import { SessionObservation } from "../inspection/observation";
 import { BrowserAudio, type RtcState } from "./browser-audio";
-export type { AudioInputDevice, AudioTransportStats, RtcState } from "./browser-audio";
-import type { CostEstimate } from "../shared/pricing";
-export { MAX_EVENTS, MAX_FRAGMENTS } from "./observation";
+import type { CostEstimate } from "../../shared/pricing";
 export const SESSION_LIMIT_SECONDS = 600;
 const phases: readonly string[] = ["idle", "starting", "live", "stopping", "error"];
 const sources: readonly string[] = ["browser", "backend", "live", "luna", "web"];

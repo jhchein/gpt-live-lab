@@ -1,4 +1,4 @@
-import type { CostEstimate } from "../shared/pricing";
+import type { CostEstimate } from "../../../shared/pricing";
 
 export function formatCostUsd(value: number): string {
   if (value > 0 && value < 0.0000000001) return `$${value.toExponential(4)}`;

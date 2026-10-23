@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import type { SessionMetrics } from "../shared/protocol";
-import { NOT_REPORTED, formatCount, formatSeconds } from "./format";
-import { JsonView } from "./JsonView";
-import { buildExport } from "./trace";
-import { MAX_EVENTS, MAX_FRAGMENTS, type LiveSession } from "./useLiveSession";
-import { Badge, type Tone } from "./ui";
+import type { SessionMetrics } from "../../../shared/protocol";
+import { NOT_REPORTED, formatCount, formatSeconds } from "../../ui/format";
+import { JsonView } from "../../ui/JsonView";
+import { buildExport } from "../diagnostics/export";
+import { MAX_EVENTS, MAX_FRAGMENTS } from "../observation";
+import { type LiveSession } from "../../session/useLiveSession";
+import { Badge, type Tone } from "../../ui/indicators";
 import { CostBreakdown } from "./CostTicker";
 
 function closeSummary(metrics: SessionMetrics, active: boolean, stopping: boolean, ended: boolean, hasSessionId: boolean): { label: string; tone: Tone; detail: string } {

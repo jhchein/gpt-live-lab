@@ -1,25 +1,13 @@
-import {
-  isObject,
-  type SessionMetrics, type TokenUsage, type TraceEvent, type TranscriptFragment,
-} from "../shared/protocol";
-import { byteLength, formatDuration } from "./format";
-import { sourceUrl, type SearchSource } from "../shared/search";
-
-export type Severity = "info" | "warning" | "error";
-
-export function severityOf(event: TraceEvent): Severity {
-  return event.severity ?? (event.category === "error" ? "error" : "info");
-}
-
-export function timeOf(event: TraceEvent) {
-  return Date.parse(event.time);
-}
+import { isObject, type TokenUsage, type TraceEvent } from "../../../shared/protocol";
+import { sourceUrl, type SearchSource } from "../../../shared/search";
+import { byteLength, formatDuration } from "../../ui/format";
+import { severityOf, timeOf } from "../events";
 
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
-const text = (value: unknown) => (typeof value === "string" ? value : undefined);
-const field = (payload: unknown, key: string): unknown => (isObject(payload) ? payload[key] : undefined);
 
-/* ---------- Delegations ---------- */
+const text = (value: unknown) => (typeof value === "string" ? value : undefined);
+
+const field = (payload: unknown, key: string): unknown => (isObject(payload) ? payload[key] : undefined);
 
 export type DelegationStatus = "waiting" | "running" | "answered" | "failed" | "cancelled" | "rejected";
 
@@ -138,8 +126,6 @@ export function buildDelegations(events: TraceEvent[]): Delegation[] {
   return [...groups].map(([id, list]) => buildDelegation(id, list)).sort((a, b) => a.start - b.start);
 }
 
-/* ---------- Waterfall ---------- */
-
 export interface Lane {
   key: string;
   label: string;
@@ -231,8 +217,6 @@ export function buildWaterfall(d: Delegation, now: number): Waterfall {
   return { span: Math.max(1, horizon, ...points), lanes };
 }
 
-/* ---------- Luna request and response views ---------- */
-
 export interface LunaRequestView {
   model?: string;
   store?: boolean;
@@ -310,8 +294,6 @@ export function simpleEntries(payload: unknown): [string, string][] {
     .map(([key, value]) => [key, String(value)]);
 }
 
-/* ---------- Step descriptions ---------- */
-
 export function describeStep(event: TraceEvent, chunkNumber?: number): string {
   switch (event.type) {
     case "session.delegation.created": return "GPT-Live created a delegation";
@@ -340,200 +322,4 @@ export function describeStep(event: TraceEvent, chunkNumber?: number): string {
     case "delegation.limit": return "Queue full, delegation rejected";
     default: return event.label;
   }
-}
-
-/* ---------- Issues ---------- */
-
-export interface Issue {
-  event: TraceEvent;
-  count: number;
-}
-
-// Backend and Azure problems, one row per event type with the latest occurrence.
-export function collectIssues(events: TraceEvent[]): Issue[] {
-  const byType = new Map<string, Issue>();
-  for (const event of events) {
-    if (event.source === "browser" || severityOf(event) === "info") continue;
-    const known = byType.get(event.type);
-    byType.set(event.type, { event, count: (known?.count ?? 0) + 1 });
-  }
-  return [...byType.values()].sort((a, b) => timeOf(b.event) - timeOf(a.event));
-}
-
-/* ---------- Conversation ---------- */
-
-export interface Fragment extends TranscriptFragment {
-  at: number;
-}
-
-export type ConversationItem =
-  | { kind: "utterance"; key: string; speaker: TranscriptFragment["speaker"]; text: string; startMs: number }
-  | { kind: "marker"; key: string; delegationId: string; tone: Lane["tone"]; label: string };
-
-// Fragments carry their arrival time. Markers come from delegation events. Both clocks run on this machine.
-export function buildConversation(fragments: Fragment[], delegations: Delegation[]): ConversationItem[] {
-  type Entry = { at: number; fragment?: Fragment; marker?: ConversationItem };
-  const entries: Entry[] = fragments.map((fragment) => ({ at: fragment.at, fragment }));
-  for (const d of delegations) {
-    const short = d.id.slice(-6);
-    const finish = d.failure ?? d.cancelled ?? d.response;
-    const lastAck = d.acks.at(-1);
-    const marker = (event: TraceEvent, tone: Lane["tone"], label: string): Entry => ({
-      at: timeOf(event), marker: { kind: "marker", key: `${d.id}:${event.id}`, delegationId: d.id, tone, label },
-    });
-    if (d.created) entries.push(marker(d.created, "idle", `Delegation ${short} created`));
-    if (finish) {
-      entries.push(marker(
-        finish, d.failure ? "bad" : d.cancelled ? "warn" : "accent",
-        d.failure ? `Delegation ${short} failed` : d.cancelled ? `Delegation ${short} cancelled`
-          : `Reasoning response ${short}, ${formatDuration(finish.durationMs, "duration unknown")}`));
-    }
-    if (lastAck) entries.push(marker(lastAck, "ok", `Azure accepted context for ${short}, ${d.acks.length}/${d.chunks.length}`));
-  }
-  entries.sort((a, b) => (Number.isFinite(a.at) ? a.at : 0) - (Number.isFinite(b.at) ? b.at : 0));
-
-  const items: ConversationItem[] = [];
-  for (const entry of entries) {
-    if (entry.marker) {
-      items.push(entry.marker);
-      continue;
-    }
-    const fragment = entry.fragment!;
-    const last = items.at(-1);
-    if (last?.kind === "utterance" && last.speaker === fragment.speaker) last.text += fragment.text;
-    else items.push({ kind: "utterance", key: `u${items.length}`, speaker: fragment.speaker, text: fragment.text, startMs: fragment.startMs });
-  }
-  return items;
-}
-
-/* ---------- Search and display ---------- */
-
-const searchable = new WeakMap<TraceEvent, string>();
-
-function searchText(event: TraceEvent) {
-  let value = searchable.get(event);
-  if (value === undefined) {
-    let payload = "";
-    try { payload = JSON.stringify(event.payload) ?? ""; } catch { payload = ""; }
-    value = `${event.type} ${event.label} ${event.source} ${event.category} ${event.delegationId ?? ""} ${payload}`.toLowerCase();
-    searchable.set(event, value);
-  }
-  return value;
-}
-
-export function queryTerms(query: string) {
-  return query.toLowerCase().split(/\s+/).filter(Boolean);
-}
-
-export function matchesQuery(event: TraceEvent, terms: string[]) {
-  if (!terms.length) return true;
-  const haystack = searchText(event);
-  return terms.every((term) => haystack.includes(term));
-}
-
-const OPAQUE_MIN = 200;
-
-// Long encrypted_content style values are opaque. They hide behind a placeholder until revealed.
-export function displayJson(payload: unknown, reveal: boolean): { text: string; hidden: number } {
-  let hidden = 0;
-  let json: string | undefined;
-  try {
-    json = JSON.stringify(payload, (key, value: unknown) => {
-      if (!reveal && typeof value === "string" && value.length >= OPAQUE_MIN && /encrypted/i.test(key)) {
-        hidden++;
-        return `[encrypted, ${value.length} characters, hidden]`;
-      }
-      return value;
-    }, 2);
-  } catch {
-    json = undefined;
-  }
-  return { text: json ?? "(no content)", hidden };
-}
-
-export function highlightParts(source: string, terms: string[]): { text: string; match: boolean }[] {
-  if (!terms.length || source.length > 400_000) return [{ text: source, match: false }];
-  const pattern = new RegExp(`(${terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
-  return source.split(pattern).filter((part) => part !== "").map((part, index) => ({ text: part, match: index % 2 === 1 }));
-}
-
-/* ---------- Export ---------- */
-
-const SECRET_KEY = /(authorization|api[-_]?key|access[-_]?token|refresh[-_]?token|id[-_]?token|client[-_]?secret|secret|password|passwd|cookie|credential|ephemeral|^token$|^bearer$)/i;
-const DEVICE_ID_KEY = /^(device|group)[-_]?id$/i;
-// Keys whose subtree describes a capture device. Anything named "label" below them is a device name.
-const DEVICE_CONTEXT_KEY = /microphone|track|device|^mic$/i;
-const TRACK_SHAPE_KEYS = ["readyState", "enabled", "muted", "deviceId", "groupId"];
-
-function scrubText(value: string): string {
-  if (/^[A-Za-z0-9+/_=-]{300,}$/.test(value)) return `[opaque value removed, ${value.length} characters]`;
-  return value
-    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [entfernt]")
-    .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*/g, "[JWT removed]")
-    .replace(/((?:api[-_ ]?key|secret|token|password)["']?\s*[:=]\s*["']?)[^\s"',;]+/gi, "$1[removed]");
-}
-
-// Removes credentials, SDP, encrypted blobs, device IDs and microphone names from a trace payload.
-// Only payloads are scrubbed, so the TraceEvent label and conversation text stay as they are. Free text can still hold private content.
-export function sanitizeForExport(value: unknown, inDevice = false): unknown {
-  if (typeof value === "string") return scrubText(value);
-  if (Array.isArray(value)) return value.map((entry) => sanitizeForExport(entry, inDevice));
-  if (!isObject(value)) return value;
-  const device = inDevice || ("label" in value && TRACK_SHAPE_KEYS.some((key) => key in value));
-  return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
-    if (SECRET_KEY.test(key)) return [key, "[removed]"];
-    if (/^sdp$/i.test(key)) return [key, "[SDP removed]"];
-    if (/encrypted/i.test(key)) return [key, "[encrypted, removed]"];
-    if (DEVICE_ID_KEY.test(key)) return [key, "[device ID removed]"];
-    if (device && key === "label") return [key, "[device name removed]"];
-    return [key, sanitizeForExport(entry, device || DEVICE_CONTEXT_KEY.test(key))];
-  }));
-}
-
-export interface ExportInput {
-  sessionId: string;
-  phase: string;
-  startedAt?: number;
-  endedAt?: number;
-  deployments?: { live: string; reasoning: string };
-  metrics: SessionMetrics;
-  events: TraceEvent[];
-  fragments: Fragment[];
-  totalEvents: number;
-  totalFragments: number;
-  maxEvents: number;
-  maxFragments: number;
-}
-
-export function buildExport(input: ExportInput) {
-  const iso = (value: number | undefined) => (value === undefined ? null : new Date(value).toISOString());
-  const kept = input.events.filter((event) => event.category !== "transcript");
-  return {
-    format: "gpt-live-lab-session",
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    privacy: {
-      containsConversation: true,
-      note: "Contains conversation text and model requests and responses. Automatic redaction is incomplete. Review before sharing.",
-      removed: ["Authorization and tokens", "SDP", "encrypted state", "microphone names", "device IDs"],
-    },
-    session: {
-      id: input.sessionId || null, phase: input.phase, startedAt: iso(input.startedAt), endedAt: iso(input.endedAt),
-      localSeconds: input.startedAt === undefined ? null : Math.max(0, Math.round(((input.endedAt ?? Date.now()) - input.startedAt) / 1000)),
-      deployments: input.deployments ?? null,
-    },
-    metrics: input.metrics,
-    cost: input.metrics.cost ?? "unavailable: no rates configured",
-    buffer: {
-      maxEvents: input.maxEvents, eventsSeen: input.totalEvents, eventsInBuffer: input.events.length,
-      eventsDropped: Math.max(0, input.totalEvents - input.events.length),
-      transcriptEventsExcluded: input.events.length - kept.length,
-      maxTranscriptFragments: input.maxFragments, fragmentsSeen: input.totalFragments,
-      fragmentsInBuffer: input.fragments.length,
-      fragmentsDropped: Math.max(0, input.totalFragments - input.fragments.length),
-      note: "Metrics cover the entire session. Events and transcript contain only the latest buffered entries.",
-    },
-    transcript: input.fragments.map(({ speaker, text, startMs, endMs }) => ({ speaker, text: scrubText(text), startMs, endMs })),
-    events: kept.map((event) => ({ ...event, payload: sanitizeForExport(event.payload) })),
-  };
 }

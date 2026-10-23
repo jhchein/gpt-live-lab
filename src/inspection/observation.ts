@@ -1,5 +1,6 @@
-import { isObject, type TraceEvent, type TranscriptFragment } from "../shared/protocol";
-import { buildDelegations, type Delegation, type Fragment } from "./trace";
+import { isObject, type TraceEvent, type TranscriptFragment } from "../../shared/protocol";
+import { buildDelegations, type Delegation } from "./delegations/model";
+import { type Fragment } from "./conversation/model";
 
 export const MAX_EVENTS = 600;
 export const MAX_FRAGMENTS = 800;

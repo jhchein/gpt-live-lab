@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SessionObservation, MAX_EVENTS, MAX_FRAGMENTS } from "../src/observation.ts";
-import { deriveFlow } from "../src/flow.ts";
-import type { TraceEvent } from "../shared/protocol.ts";
+import { SessionObservation, MAX_EVENTS, MAX_FRAGMENTS } from "./observation.ts";
+import { deriveFlow } from "./connections/flow.ts";
+import type { TraceEvent } from "../../shared/protocol.ts";
 
 let number = 0;
 function event(type: string, delegationId?: string, payload: unknown = {}): TraceEvent {

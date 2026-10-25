@@ -4,7 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { calculateCost, type PricingConfig } from "../shared/pricing.ts";
 import { emptySessionMetrics, type SessionMetrics } from "../shared/protocol.ts";
-import { CostBreakdown, CostTicker, formatCostUsd } from "../src/inspection/usage/CostTicker.tsx";
+import { CostBreakdown, CostTicker, formatCostHeadline, formatCostUsd } from "../src/inspection/usage/CostTicker.tsx";
 import { PricingConfigError, readPricing } from "../server/config/pricing.ts";
 
 const configured: PricingConfig = {
@@ -378,4 +378,10 @@ test("ticker renders unknown rates, visible small amounts, reusable reasons and 
   assert.equal(formatCostUsd(0.0000001), "$0.0000001");
   assert.equal(formatCostUsd(0.00000000001), "$1.0000e-11");
   assert.equal(formatCostUsd(0), "$0.000000");
+  assert.equal(formatCostHeadline(0.0783174333), "$0.0783");
+  assert.equal(formatCostHeadline(0), "$0.0000");
+  assert.equal(formatCostHeadline(0.00000001), "<$0.0001");
+  const headline = /<summary>[\s\S]*?<\/summary>/.exec(renderToStaticMarkup(createElement(CostTicker, { cost: before })))?.[0];
+  assert.match(String(headline), /\$1\.0000/);
+  assert.doesNotMatch(String(headline), /\$1\.000000/);
 });

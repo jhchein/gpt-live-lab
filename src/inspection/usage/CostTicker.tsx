@@ -5,6 +5,12 @@ export function formatCostUsd(value: number): string {
   return `$${value.toLocaleString("en-US", { minimumFractionDigits: 6, maximumFractionDigits: 10 })}`;
 }
 
+/** Compact form for the always-visible ticker. The breakdown keeps full precision. */
+export function formatCostHeadline(value: number): string {
+  if (value > 0 && value < 0.0001) return "<$0.0001";
+  return `$${value.toFixed(4)}`;
+}
+
 /** Shared with the Usage panel; no local clock, inferred tokens, or animation. */
 export function CostBreakdown({ cost }: { cost: CostEstimate }) {
   const { live, reasoning, search } = cost;
@@ -36,7 +42,7 @@ export function CostTicker({ cost }: { cost?: CostEstimate }) {
   return <details className="cost-ticker disclosure">
     <summary>
       <span>Estimated cost · USD</span>{" "}
-      <strong>{cost === undefined ? "Start a session" : hasRates ? formatCostUsd(cost.totalKnownUsd) : "Rates not configured"}</strong>
+      <strong>{cost === undefined ? "Start a session" : hasRates ? formatCostHeadline(cost.totalKnownUsd) : "Rates not configured"}</strong>
       {cost && hasRates && (!cost.complete || cost.provisional) && <span> · {cost.complete ? "provisional" : "known subtotal"}</span>}
     </summary>
     {cost ? <CostBreakdown cost={cost} /> : <p>Waiting for backend cost data. No usage or prices are inferred.</p>}

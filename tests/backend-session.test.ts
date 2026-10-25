@@ -27,6 +27,7 @@ async function fixture(t: TestContext, options: {
   delegationTimeoutMs?: number;
   pricing?: PricingConfig;
   clock?: () => Date;
+  operatorContext?: string;
 } = {}) {
   const received: JsonObject[] = [];
   const requests: { path: string; body: JsonObject; authorization: string | undefined }[] = [];
@@ -115,7 +116,7 @@ async function fixture(t: TestContext, options: {
   const session = new LiveSession({
     config, getToken, emit: (message) => messages.push(message), closeTimeoutMs: 100,
     webSearch: options.webSearch, delegationTimeoutMs: options.delegationTimeoutMs,
-    clock: options.clock,
+    clock: options.clock, operatorContext: options.operatorContext,
   });
   t.after(async () => {
     await session.stop();
@@ -168,6 +169,24 @@ test("clock is provided to GPT-Live and refreshed for every reasoning tool conti
   const requests = f.requests.filter((request) => request.path.endsWith("/responses"));
   assert.match(String(requests[0].body.instructions), /2026-10-22T18:00:00\.000Z/);
   assert.match(String(requests[1].body.instructions), /2026-10-22T18:01:00\.000Z/);
+});
+
+test("operator context reaches both model prompts and is absent when unset", async (t) => {
+  const withContext = await fixture(t, { operatorContext: "GPT-Live Lab is at github.com/example/lab." });
+  await withContext.session.start("v=0\r\noffer");
+  const live = withContext.requests[0].body.session;
+  assert.ok(isObject(live));
+  assert.match(String(live.instructions), /github\.com\/example\/lab/);
+  withContext.send(input); withContext.send(delegation());
+  await until(() => hasTrace(withContext.messages, "luna.response"));
+  const reasoning = withContext.requests.find((request) => request.path.endsWith("/responses"));
+  assert.match(String(reasoning?.body.instructions), /github\.com\/example\/lab/);
+
+  const plain = await fixture(t);
+  await plain.session.start("v=0\r\noffer");
+  const plainLive = plain.requests[0].body.session;
+  assert.ok(isObject(plainLive));
+  assert.doesNotMatch(String(plainLive.instructions), /Background supplied by the local operator/);
 });
 
 test("503 retry attempts are individually traced and priced without phantom pending charges", async (t) => {

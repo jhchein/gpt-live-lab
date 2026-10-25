@@ -11,6 +11,7 @@ import { calculateCost } from "../../shared/pricing.ts";
 import type { WebSearch } from "../search/web-search.ts";
 import { DelegationExecutor } from "../reasoning/delegation.ts";
 import { timeContext } from "../time-context.ts";
+import { operatorContextNote } from "../operator-context.ts";
 
 export interface SessionDependencies {
   config: PublicConfig;
@@ -22,6 +23,7 @@ export interface SessionDependencies {
   webSearch?: WebSearch;
   delegationTimeoutMs?: number;
   clock?: () => Date;
+  operatorContext?: string;
 }
 
 const instructions = [
@@ -142,7 +144,8 @@ export class LiveSession {
       const body = {
         session: {
           model: this.deps.config.liveDeployment,
-          instructions: `${instructions} ${timeContext(this.deps.clock?.() ?? new Date())}`,
+          instructions: [instructions, operatorContextNote(this.deps.operatorContext), timeContext(this.deps.clock?.() ?? new Date())]
+            .filter(Boolean).join(" "),
           audio: { output: { voice: "marin" } },
           delegation: { type: "client" },
         },

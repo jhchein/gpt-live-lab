@@ -38,6 +38,7 @@ Fill in `.env`. There are no defaults, and the backend stops with a setup messag
 | `AZURE_LIVE_DEPLOYMENT` | Required. Your GPT-Live deployment name. |
 | `AZURE_REASONING_DEPLOYMENT` | Required. Your reasoning deployment name. |
 | `AZURE_TENANT_ID` | Optional. Defaults to your Azure CLI login's tenant. |
+| `DEMO_CONTEXT` | Optional, up to 500 characters. Names or addresses added to both model prompts so they can recognize them. It does not describe their contents, so questions about them still need research. |
 
 Deployment names are the names you assigned in Azure, not model IDs.
 

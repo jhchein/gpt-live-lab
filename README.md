@@ -6,7 +6,7 @@ A local voice demo for Azure GPT-Live client delegation. Talk to GPT-Live, watch
 
 The browser runs React and Vite. A small Node.js backend handles Azure CLI authentication and model calls. You bring your own Azure resource and deployments.
 
-[![Watch the GPT-Live Lab demo on YouTube](docs/images/demo-video-thumbnail.jpg)](https://youtu.be/RPRjVVv27NY)
+[![Watch the GPT-Live Lab demo on YouTube](docs/images/demo-video-thumbnail.jpg)](https://www.youtube.com/watch?v=BmnvKOMw60g)
 
 *In the demo video, GPT-Live explains this lab. The repository address comes from the operator through `DEMO_CONTEXT`, not from the model itself.*
 

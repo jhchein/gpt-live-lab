@@ -10,6 +10,12 @@ The browser runs React and Vite. A small Node.js backend handles Azure CLI authe
 
 *Illustrative session with simulated activity, not a recorded or measured run. Audio stays connected between browser and GPT-Live while the backend waits for the reasoning model.*
 
+## Demo video
+
+[![Watch the GPT-Live Lab demo on YouTube](https://img.youtube.com/vi/RPRjVVv27NY/maxresdefault.jpg)](https://youtu.be/RPRjVVv27NY)
+
+In the video, GPT-Live explains this lab. The repository address comes from the operator through `DEMO_CONTEXT`, not from the model itself.
+
 ## Run locally
 
 You need:

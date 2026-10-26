@@ -6,15 +6,9 @@ A local voice demo for Azure GPT-Live client delegation. Talk to GPT-Live, watch
 
 The browser runs React and Vite. A small Node.js backend handles Azure CLI authentication and model calls. You bring your own Azure resource and deployments.
 
-![Dark Live connections diagram. The browser shows Hearing you and GPT-Live shows Result pending, with dashed WebRTC audio arrows directly between them. The backend shows Awaiting reasoning and the reasoning model shows Thinking 3.80 s. The Web IQ search node shows Ready.](docs/images/live-connections-thinking.png)
-
-*Illustrative session with simulated activity, not a recorded or measured run. Audio stays connected between browser and GPT-Live while the backend waits for the reasoning model.*
-
-## Demo video
-
 [![Watch the GPT-Live Lab demo on YouTube](https://img.youtube.com/vi/RPRjVVv27NY/maxresdefault.jpg)](https://youtu.be/RPRjVVv27NY)
 
-In the video, GPT-Live explains this lab. The repository address comes from the operator through `DEMO_CONTEXT`, not from the model itself.
+*In the demo video, GPT-Live explains this lab. The repository address comes from the operator through `DEMO_CONTEXT`, not from the model itself.*
 
 ## Run locally
 
@@ -96,6 +90,10 @@ Model rates have no defaults. Blank means unknown, and `0` means free.
 **Estimated cost · USD** updates every second. Before final Live usage arrives, it uses the larger of reported seconds and local elapsed time. The final reported seconds replace that figure, so the amount can go down. Missing rates or usage produce a labeled **known subtotal**. The result is an estimate, not an invoice, and premium web content may cost extra.
 
 ## Read the demo
+
+![Dark Live connections diagram. The browser shows Hearing you and GPT-Live shows Result pending, with dashed WebRTC audio arrows directly between them. The backend shows Awaiting reasoning and the reasoning model shows Thinking 3.80 s. The Web IQ search node shows Ready.](docs/images/live-connections-thinking.png)
+
+*Illustrative session with simulated activity, not a recorded or measured run. Audio stays connected between browser and GPT-Live while the backend waits for the reasoning model.*
 
 - **Live connections** shows your browser and backend, the Azure models, and Web IQ. Arrows show open connections, traffic and waiting. Dots are observed messages, not network packets.
 - **Conversation** shows the transcript with clickable delegation markers.

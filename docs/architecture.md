@@ -14,6 +14,7 @@ Each area owns its implementation and module tests. The entry point, local gatew
 | Local HTTP and WebSocket access | [`server/app.ts`](../server/app.ts). It enforces origins and the one-browser limit, then dispatches validated commands. |
 | Voice-session lifecycle, delegation queue and delivery | [`server/live/`](../server/live/). It owns the Azure sideband connection, transcript context, append correlation and closure status. |
 | Reasoning steps and tool continuation | [`server/reasoning/`](../server/reasoning/). It owns Responses streaming, source collection, sentence delivery and aggregate reasoning/search usage. |
+| Read-only board tools (experimental) | [`server/mcp/`](../server/mcp/). It owns the MCP HTTP client, the tool allowlist and the result limits. Redaction of board data in traces lives in the delegation executor. See the [spike notes](spike-mcp-todo-board.md). |
 | Web IQ requests and retry policy | [`server/search/`](../server/search/). It owns dispatch, the shared rate window, response limits and cancellation during retry waits. |
 | Backend trace redaction | [`server/diagnostics/`](../server/diagnostics/). Session exports have a separate, stricter [browser policy](../src/inspection/diagnostics/export.ts). |
 | Browser commands, server messages and configuration decoding | [`shared/protocol.ts`](../shared/protocol.ts). Types and runtime validation live together. |
@@ -31,7 +32,7 @@ After Start, the browser acquires its microphone and gathers ICE candidates. Ope
 
 A browser connection owns at most one voice session. A new start opens a new connection. `LiveSession` owns this lifecycle and serializes delegations; `DelegationExecutor` receives transcript and delivery callbacks without owning the Live connection.
 
-For each delegation, the executor waits briefly for in-flight transcripts and takes a context snapshot. It runs reasoning steps, executes requested searches and continues with their results. Completed sentences can reach GPT-Live before the model response finishes. Preliminary text stays buffered while a search-enabled step has no sources.
+For each delegation, the executor waits briefly for in-flight transcripts and takes a context snapshot. It runs reasoning steps, executes requested searches and continues with their results. Completed sentences can reach GPT-Live before the model response finishes. Preliminary text stays buffered while a tool-enabled step has neither sources nor a board result.
 
 An append acknowledgement means Azure accepted a delivery chunk. It does not prove that the user heard it.
 
@@ -57,6 +58,6 @@ We test through the existing module interfaces rather than adding parallel sessi
 - Change browser commands and server-message validation together in the shared protocol. Unknown additive message fields remain compatible; known numeric fields must be valid. Missing usage and prices remain unknown, while explicit zero remains zero.
 - Keep queue and connection decisions in `LiveSession`. A search setting change applies to the next delegation, not to a delegation already running.
 - Keep execution independent of retained UI history. Observation state preserves current activity when old event details leave the bounded buffers.
-- Keep credentials and opaque model state out of traces. Do not merge trace and export policies merely because both redact data. Review free text before sharing an export.
+- Keep credentials and opaque model state out of traces. Board tool arguments and results must stay out of them too. Do not merge trace and export policies merely because both redact data. Review free text before sharing an export.
 
 Run `npm test` and `npm run build` after changes. Test discovery includes nested server, shared and frontend tests. The [backend-session checks](../tests/backend-session.test.ts) exercise lifecycle, streaming, tool continuation and shutdown across modules using local mocks. [Protocol tests](../shared/protocol.test.ts) and the [gateway test](../server/app.test.ts) cover decoding without React, Azure credentials or paid calls.

@@ -39,6 +39,8 @@ Fill in `.env`. There are no defaults, and the backend stops with a setup messag
 | `AZURE_REASONING_DEPLOYMENT` | Required. Your reasoning deployment name. |
 | `AZURE_TENANT_ID` | Optional. Defaults to your Azure CLI login's tenant. |
 | `DEMO_CONTEXT` | Optional, up to 500 characters. Names or addresses added to both model prompts so they can recognize them. It does not describe their contents, so questions about them still need research. |
+| `REASONING_EFFORT` | Optional. `low`, `medium` or `high`. Unset uses the model default. |
+| `REASONING_MAX_WORDS` | Optional. Answer length limit in the reasoning prompt, 20 to 600. Defaults to 120. |
 
 Deployment names are the names you assigned in Azure, not model IDs.
 
@@ -64,12 +66,16 @@ With a key, the **Web search** switch starts enabled and applies to the next del
 
 Limits and behavior:
 
-- Only Web Search is enabled. Each query requests up to five results with strict SafeSearch.
+- Web Search is the only Web IQ product enabled. Each query requests up to five results with strict SafeSearch.
 - A delegation has a 120-second deadline across all model and search steps. The backend sends at most 100 searches per rolling minute, without counting other applications that share the key.
 - HTTP 503 gets one automatic retry. A valid `Retry-After` sets the wait, otherwise the backend waits 1 to 1.5 seconds. Each dispatched attempt enters the cost estimate; failed attempts may still be billable. Other errors, including 401, 403 and 429, are not retried.
 - Web IQ receives model-written queries, not the full transcript, but queries can still contain private details.
 - Sources are untrusted. A citation is marked only when the model uses a returned source ID, which verifies the reference and not the claim.
 - The demo does not send citation or click telemetry. If your Web IQ profile enables instrumentation, the demo shows a warning.
+
+## Optional to-do board tools (experimental)
+
+This branch can let the reasoning model read a private to-do board through your own MCP server. Set `MCP_SERVER_URL`, `MCP_SERVER_TOKEN` and `MCP_SERVER_TOOLS` in the backend's environment, restart, and ask about your tasks. Only the tools you list are exposed, and you must never list one that writes. Tool results stay out of the trace but not out of the spoken answer. The [spike notes](docs/spike-mcp-todo-board.md) cover setup, limits and risks.
 
 ## Configure the cost ticker
 
@@ -139,7 +145,7 @@ Internal `luna.*` event names mean reasoning calls, whatever your deployment is 
 
 ## Privacy and limits
 
-- Audio and transcript context go to Azure. Search queries go to Web IQ when enabled. Responses use `store: false`, but provider logging and retention policies still apply.
+- Audio and transcript context go to Azure. Search queries go to Web IQ when enabled. With board tools enabled, tool results also go to the reasoning model, and the trace keeps only the tool name, size and duration. Responses use `store: false`, but provider logging and retention policies still apply.
 - History lives in memory only. There is no analytics service or durable store.
 - **Export session** downloads conversation text, model requests and responses, and usage. Credentials, SDP, encrypted state and microphone identifiers are redacted. Free text can still hold private data, so review exports before sharing.
 - Git ignores `.env` files, build output, logs and export filenames. Never commit credentials, real resource identifiers or screenshots of private sessions.

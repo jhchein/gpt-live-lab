@@ -16,6 +16,9 @@ One model request and its response within a delegation. A step may produce answe
 **Search attempt**:
 One dispatched request to the web search provider. A retry is another attempt at the same search, not another delegation.
 
+**Board tool**:
+A read-only tool from the operator's MCP server that the reasoning model may call during a delegation. The trace records that a call happened, not what it contained.
+
 **Observation state**:
 The application's current account of the voice session and delegated work, used to explain the same activity consistently across views. It describes execution without controlling it and is distinct from the retained event history.
 

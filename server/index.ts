@@ -5,6 +5,7 @@ import { createAccessTokenProvider } from "./token.ts";
 import { createWebSearch } from "./search/web-search.ts";
 import { readPricing } from "./config/pricing.ts";
 import { readOperatorContext } from "./operator-context.ts";
+import { readMcpToolbox } from "./mcp/client.ts";
 
 const config = readConfig(process.env);
 const webKey = process.env.WEB_IQ_API_KEY?.trim();
@@ -22,6 +23,7 @@ const app = createApp(config, {
   getToken,
   webSearch: webKey ? createWebSearch(webKey) : undefined,
   operatorContext: readOperatorContext(process.env),
+  mcp: readMcpToolbox(process.env),
 });
 app.server.on("error", (error) => {
   console.error("Backend failed:", error.message);

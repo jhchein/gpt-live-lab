@@ -9,6 +9,7 @@ import { contextChunks, readTranscript } from "./protocol.ts";
 import { scrub } from "../diagnostics/redaction.ts";
 import { calculateCost } from "../../shared/pricing.ts";
 import type { WebSearch } from "../search/web-search.ts";
+import type { McpToolbox } from "../mcp/client.ts";
 import { DelegationExecutor } from "../reasoning/delegation.ts";
 import { timeContext } from "../time-context.ts";
 import { operatorContextNote } from "../operator-context.ts";
@@ -21,6 +22,7 @@ export interface SessionDependencies {
   connect?: (url: string, token: string) => WebSocket;
   closeTimeoutMs?: number;
   webSearch?: WebSearch;
+  mcp?: McpToolbox;
   delegationTimeoutMs?: number;
   clock?: () => Date;
   operatorContext?: string;

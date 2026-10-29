@@ -68,6 +68,49 @@ test("delegation execution performs tool continuation and accounts usage without
   assert.ok(f.traces.some((trace) => trace.type === "search.citations"));
 });
 
+test("board tools reach the model but never the trace, and web search stays off when disabled", async () => {
+  const boardCall = {
+    status: "completed", output: [
+      { type: "function_call", call_id: "board-one", name: "list_tasks", arguments: '{"filter":"SECRET-QUERY"}' },
+    ],
+    usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15, input_tokens_details: { cached_tokens: 0 } },
+  };
+  const calls: { name: string; args: string }[] = [];
+  const f = fixture([boardCall, answer], {
+    mcp: {
+      tools: async () => [{ type: "function", name: "list_tasks", description: "List", parameters: { type: "object", properties: {} }, strict: false }],
+      call: async (name, args) => { calls.push({ name, args }); return { text: "SECRET-TASK-TITLE", isError: false, truncated: false }; },
+    },
+  });
+  await f.executor.run("d", new AbortController().signal, false);
+  assert.deepEqual(calls, [{ name: "list_tasks", args: '{"filter":"SECRET-QUERY"}' }]);
+  assert.deepEqual((f.requests[0].tools as { name: string }[]).map((entry) => entry.name), ["list_tasks"]);
+  assert.ok(JSON.stringify(f.requests[1].input).includes("SECRET-TASK-TITLE"));
+  const traced = JSON.stringify(f.traces);
+  assert.ok(!traced.includes("SECRET-TASK-TITLE") && !traced.includes("SECRET-QUERY"));
+  assert.ok(f.traces.some((trace) => trace.type === "mcp.response"));
+  assert.equal(f.metrics?.searchRequests, 0);
+});
+
+test("a model that calls web_search while only board tools are enabled is rejected", async () => {
+  const f = fixture([tool], {
+    mcp: {
+      tools: async () => [{ type: "function", name: "list_tasks", description: "List", parameters: { type: "object", properties: {} }, strict: false }],
+      call: async () => { throw new Error("must not be called"); },
+    },
+  });
+  await f.executor.run("d", new AbortController().signal, false);
+  assert.equal(f.metrics?.lunaFailures, 1);
+});
+
+test("an unreachable board does not block an answer", async () => {
+  const f = fixture([answer], { mcp: { tools: async () => { throw new Error("down"); }, call: async () => { throw new Error("unused"); } } });
+  await f.executor.run("d", new AbortController().signal, false);
+  assert.ok(f.traces.some((trace) => trace.type === "mcp.unavailable"));
+  assert.equal(f.metrics?.lunaFailures, 0);
+  assert.equal(f.requests[0].tools, undefined);
+});
+
 test("partial response failure emits an incomplete notice, not a completed delegation", async () => {
   const f = fixture([{ ...answer, status: "failed" }]);
   await f.executor.run("d", new AbortController().signal, false);

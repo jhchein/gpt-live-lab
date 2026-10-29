@@ -10,7 +10,7 @@ import { scrub } from "../diagnostics/redaction.ts";
 import { calculateCost } from "../../shared/pricing.ts";
 import type { WebSearch } from "../search/web-search.ts";
 import type { McpToolbox } from "../mcp/client.ts";
-import { DelegationExecutor } from "../reasoning/delegation.ts";
+import { DelegationExecutor, type ReasoningStyle } from "../reasoning/delegation.ts";
 import { timeContext } from "../time-context.ts";
 import { operatorContextNote } from "../operator-context.ts";
 
@@ -23,6 +23,7 @@ export interface SessionDependencies {
   closeTimeoutMs?: number;
   webSearch?: WebSearch;
   mcp?: McpToolbox;
+  reasoningStyle?: ReasoningStyle;
   delegationTimeoutMs?: number;
   clock?: () => Date;
   operatorContext?: string;
@@ -37,6 +38,8 @@ const instructions = [
   "While waiting, keep listening and briefly explain that the question is being checked.",
   "Returned results may arrive in several fragments. Use them for a concise spoken answer.",
 ].join(" ");
+
+const boardInstruction = "The reasoning backend can also read the user's private to-do board. Delegate questions about their tasks, plans, priorities or blockers, and say briefly that you are checking the board.";
 
 export class LiveSession {
   private phase: Phase = "idle";
@@ -146,7 +149,7 @@ export class LiveSession {
       const body = {
         session: {
           model: this.deps.config.liveDeployment,
-          instructions: [instructions, operatorContextNote(this.deps.operatorContext), timeContext(this.deps.clock?.() ?? new Date())]
+          instructions: [instructions, this.deps.mcp ? boardInstruction : "", operatorContextNote(this.deps.operatorContext), timeContext(this.deps.clock?.() ?? new Date())]
             .filter(Boolean).join(" "),
           audio: { output: { voice: "marin" } },
           delegation: { type: "client" },

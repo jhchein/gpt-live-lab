@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DelegationExecutor, type DelegationDependencies, type DelegationMetrics } from "./delegation.ts";
+import { DelegationExecutor, readReasoningStyle, type DelegationDependencies, type DelegationMetrics } from "./delegation.ts";
 import { isObject, type JsonObject, type TranscriptFragment } from "../../shared/protocol.ts";
 
 const transcript: TranscriptFragment[] = [{ speaker: "user", text: "Find current facts.", startMs: 0, endMs: 100 }];
@@ -109,6 +109,17 @@ test("an unreachable board does not block an answer", async () => {
   assert.ok(f.traces.some((trace) => trace.type === "mcp.unavailable"));
   assert.equal(f.metrics?.lunaFailures, 0);
   assert.equal(f.requests[0].tools, undefined);
+});
+
+test("reasoning style is validated, and effort and word limit reach the request", async () => {
+  assert.deepEqual(readReasoningStyle({}), { effort: undefined, maxWords: 120 });
+  assert.deepEqual(readReasoningStyle({ REASONING_EFFORT: "High", REASONING_MAX_WORDS: "250" }), { effort: "high", maxWords: 250 });
+  assert.throws(() => readReasoningStyle({ REASONING_EFFORT: "max" }), /REASONING_EFFORT/);
+  assert.throws(() => readReasoningStyle({ REASONING_MAX_WORDS: "5" }), /REASONING_MAX_WORDS/);
+  const f = fixture([answer], { reasoningStyle: { effort: "low", maxWords: 250 } });
+  await f.executor.run("d", new AbortController().signal, false);
+  assert.deepEqual(f.requests[0].reasoning, { effort: "low" });
+  assert.ok(String(f.requests[0].instructions).includes("at most 250 words"));
 });
 
 test("partial response failure emits an incomplete notice, not a completed delegation", async () => {
